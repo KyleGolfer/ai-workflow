@@ -1,0 +1,28 @@
+{
+    # Use Tailscale certificates for HTTPS
+    auto_https off
+}
+
+# n8n Workflow Editor
+n8n.{$TAILSCALE_DOMAIN} {
+    reverse_proxy n8n:5678
+    tls {
+        get_certificate tailscale
+    }
+}
+
+# LiteLLM API Proxy
+litellm.{$TAILSCALE_DOMAIN} {
+    reverse_proxy litellm:4000
+    tls {
+        get_certificate tailscale
+    }
+}
+
+# Ollama API (optional - for direct access)
+ollama.{$TAILSCALE_DOMAIN} {
+    reverse_proxy ollama:11434
+    tls {
+        get_certificate tailscale
+    }
+}

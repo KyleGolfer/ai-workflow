@@ -1,0 +1,36 @@
+model_list:
+  # Local models - default for cost savings
+  - model_name: local/llama3
+    litellm_params:
+      model: ollama/llama3.1:70b
+      api_base: http://ollama:11434
+      timeout: 120
+  
+  - model_name: local/qwen
+    litellm_params:
+      model: ollama/qwen2.5:72b
+      api_base: http://ollama:11434
+      timeout: 120
+
+  # Venice - premium credits for complex tasks
+  - model_name: venice/premium
+    litellm_params:
+      model: openai/venice-uncensored
+      api_base: https://api.venice.ai/api/v1
+      api_key: os.environ/VENICE_API_KEY
+
+  - model_name: venice/fast
+    litellm_params:
+      model: openai/venice-fast
+      api_base: https://api.venice.ai/api/v1
+      api_key: os.environ/VENICE_API_KEY
+
+# Router settings
+router_settings:
+  # Retry failed requests
+  num_retries: 2
+  # Timeout handling
+  timeout: 60
+
+general_settings:
+  master_key: os.environ/LITELLM_MASTER_KEY

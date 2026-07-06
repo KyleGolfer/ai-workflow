@@ -1,0 +1,69 @@
+version: '3.8'
+
+networks:
+  ai-stack:
+    driver: bridge
+
+services:
+  # Reverse Proxy (Caddy with Tailscale)
+  caddy:
+    image: caddy:2-alpine
+    container_name: caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    networks:
+      - ai-stack
+    environment:
+      - TAILSCALE_DOMAIN=${TAILSCALE_DOMAIN}
+
+  # Local AI Models
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ollama
+    restart: unless-stopped
+    volumes:
+      - ./ollama-models:/root/.ollama
+    networks:
+      - ai-stack
+    environment:
+      - OLLAMA_KEEP_ALIVE=24h
+
+  # AI Model Router
+  litellm:
+    image: ghcr.io/berriai/litellm:main-latest
+    container_name: litellm
+    restart: unless-stopped
+    volumes:
+      - ./litellm-config/config.yaml:/app/config.yaml:ro
+    networks:
+      - ai-stack
+    environment:
+      - LITELLM_MASTER_KEY=${LITELLM_MASTER_KEY}
+      - VENICE_API_KEY=${VENICE_API_KEY}
+    command: ["--config", "/app/config.yaml", "--port", "4000"]
+
+  # Workflow Engine
+  n8n:
+    image: n8nio/n8n:latest
+    container_name: n8n
+    restart: unless-stopped
+    volumes:
+      - ./n8n-data:/home/node/.n8n
+    networks:
+      - ai-stack
+    environment:
+      - N8N_BASIC_AUTH_ACTIVE=true
+      - N8N_BASIC_AUTH_USER=${N8N_USER}
+      - N8N_BASIC_AUTH_PASSWORD=${N8N_PASSWORD}
+      - WEBHOOK_URL=https://${TAILSCALE_DOMAIN}
+      - N8N_HOST=${TAILSCALE_DOMAIN}
+
+volumes:
+  caddy_data:
+  caddy_config:
