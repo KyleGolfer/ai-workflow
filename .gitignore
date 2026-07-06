@@ -1,0 +1,15 @@
+# Secrets - NEVER commit these
+.env
+google-oauth.json
+client_secret*.json
+*.key
+*.pem
+
+# Runtime data (large files, generated)
+n8n-data/
+ollama-models/
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
