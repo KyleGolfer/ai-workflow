@@ -1,27 +1,9 @@
-version: '3.8'
 
 networks:
   ai-stack:
     driver: bridge
 
 services:
-  # Reverse Proxy (Caddy with Tailscale)
-  caddy:
-    image: caddy:2-alpine
-    container_name: caddy
-    restart: unless-stopped
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile:ro
-      - caddy_data:/data
-      - caddy_config:/config
-    networks:
-      - ai-stack
-    environment:
-      - TAILSCALE_DOMAIN=${TAILSCALE_DOMAIN}
-
   # Local AI Models
   ollama:
     image: ollama/ollama:latest
@@ -39,6 +21,8 @@ services:
     image: ghcr.io/berriai/litellm:main-latest
     container_name: litellm
     restart: unless-stopped
+    ports:
+      - "4000:4000" 
     volumes:
       - ./litellm-config/config.yaml:/app/config.yaml:ro
     networks:
@@ -53,6 +37,8 @@ services:
     image: n8nio/n8n:latest
     container_name: n8n
     restart: unless-stopped
+    ports:
+      - "127.0.0.1:5678:5678"
     volumes:
       - ./n8n-data:/home/node/.n8n
     networks:
@@ -61,9 +47,4 @@ services:
       - N8N_BASIC_AUTH_ACTIVE=true
       - N8N_BASIC_AUTH_USER=${N8N_USER}
       - N8N_BASIC_AUTH_PASSWORD=${N8N_PASSWORD}
-      - WEBHOOK_URL=https://${TAILSCALE_DOMAIN}
-      - N8N_HOST=${TAILSCALE_DOMAIN}
-
-volumes:
-  caddy_data:
-  caddy_config:
+      - N8N_HOST=localhost
