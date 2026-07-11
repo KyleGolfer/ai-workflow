@@ -5,7 +5,7 @@ model_list:
       model: ollama/llama3.1:8b
       api_base: http://ollama:11434
       timeout: 120
-  
+
   - model_name: local/qwen
     litellm_params:
       model: ollama/qwen2.5:72b
@@ -19,10 +19,10 @@ model_list:
       api_base: https://api.venice.ai/api/v1
       api_key: os.environ/VENICE_API_KEY
 
-  - model_name: venice/fast
+  - model_name: venice-fast
     litellm_params:
-      model: openai/venice-fast
-      api_base: https://api.venice.ai/api/v1
+      model: openai/venice-uncensored-1-2  # <-- REAL Venice model ID
+      api_base: https://api.venice.ai/v1
       api_key: os.environ/VENICE_API_KEY
 
 # Router settings
