@@ -9,6 +9,8 @@ services:
     image: ollama/ollama:latest
     container_name: ollama
     restart: unless-stopped
+    ports:
+      - "11434:11434"
     volumes:
       - ./ollama-models:/root/.ollama
     networks:
@@ -22,7 +24,7 @@ services:
     container_name: litellm
     restart: unless-stopped
     ports:
-      - "4000:4000" 
+      - "4000:4000"
     volumes:
       - ./litellm-config/config.yaml:/app/config.yaml:ro
     networks:
@@ -32,13 +34,13 @@ services:
       - VENICE_API_KEY=${VENICE_API_KEY}
     command: ["--config", "/app/config.yaml", "--port", "4000"]
 
-  # Workflow Engine
+# Workflow Engine
   n8n:
     image: n8nio/n8n:latest
     container_name: n8n
     restart: unless-stopped
     ports:
-      - "127.0.0.1:5678:5678"
+      - "5678:5678"  # Changed from 127.0.0.1:5678
     volumes:
       - ./n8n-data:/home/node/.n8n
     networks:
@@ -47,4 +49,32 @@ services:
       - N8N_BASIC_AUTH_ACTIVE=true
       - N8N_BASIC_AUTH_USER=${N8N_USER}
       - N8N_BASIC_AUTH_PASSWORD=${N8N_PASSWORD}
-      - N8N_HOST=localhost
+      - N8N_ENCRYPTION_KEY=${N8N_ENCRYPTION_KEY}
+      - N8N_HOST=pve-realisethedream.tailb44d6.ts.net
+      - N8N_PORT=5678
+      - N8N_PROTOCOL=https
+
+# Open WebUI - Chat Interface
+  open-webui:
+    image: ghcr.io/open-webui/open-webui:latest
+    container_name: open-webui
+    restart: unless-stopped
+    ports:
+      - "3000:8080"
+    environment:
+      - OPENAI_API_BASE_URL=http://litellm:4000/v1
+      - OPENAI_API_KEY=${LITELLM_MASTER_KEY}
+      - OLLAMA_BASE_URL=http://ollama:11434
+      - WEBUI_AUTH=True
+      - DEFAULT_MODELS=venice-uncensored,llama3.2:latest
+      - ENABLE_SIGNUP=True
+    volumes:
+      - open-webui-data:/app/backend/data
+    networks:
+      - ai-stack
+    depends_on:
+      - litellm
+      - ollama
+
+volumes:
+  open-webui-data:
