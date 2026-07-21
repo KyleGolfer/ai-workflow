@@ -1,3 +1,4 @@
+version: '3.8'
 
 networks:
   ai-stack:
@@ -12,11 +13,15 @@ services:
     ports:
       - "11434:11434"
     volumes:
-      - ./ollama-models:/root/.ollama
+      - /mnt/storage/ollama:/root/.ollama
     networks:
       - ai-stack
     environment:
       - OLLAMA_KEEP_ALIVE=24h
+    deploy:
+      resources:
+        limits:
+          memory: 240G
 
   # AI Model Router
   litellm:
@@ -34,13 +39,13 @@ services:
       - VENICE_API_KEY=${VENICE_API_KEY}
     command: ["--config", "/app/config.yaml", "--port", "4000"]
 
-# Workflow Engine
+  # Workflow Engine
   n8n:
     image: n8nio/n8n:latest
     container_name: n8n
     restart: unless-stopped
     ports:
-      - "5678:5678"  # Changed from 127.0.0.1:5678
+      - "5678:5678"
     volumes:
       - ./n8n-data:/home/node/.n8n
     networks:
@@ -54,7 +59,7 @@ services:
       - N8N_PORT=5678
       - N8N_PROTOCOL=https
 
-# Open WebUI - Chat Interface
+  # Open WebUI - Chat Interface
   open-webui:
     image: ghcr.io/open-webui/open-webui:latest
     container_name: open-webui
@@ -66,7 +71,7 @@ services:
       - OPENAI_API_KEY=${LITELLM_MASTER_KEY}
       - OLLAMA_BASE_URL=http://ollama:11434
       - WEBUI_AUTH=True
-      - DEFAULT_MODELS=venice-uncensored,llama3.2:latest
+      - DEFAULT_MODELS=llama-3.3-70b,qwen-2.5-72b
       - ENABLE_SIGNUP=True
     volumes:
       - open-webui-data:/app/backend/data
@@ -75,6 +80,27 @@ services:
     depends_on:
       - litellm
       - ollama
+
+  # Hermes Agent - AI Agent Platform
+  hermes-agent:
+    image: ghcr.io/nousresearch/hermes-agent:latest
+    container_name: hermes-agent
+    restart: unless-stopped
+    environment:
+      - OLLAMA_HOST=http://ollama:11434
+      - DEFAULT_MODEL=llama3.3:70b
+      - HERMES_API_KEY=${HERMES_API_KEY}
+      - OPENAI_API_BASE=http://litellm:4000/v1
+    volumes:
+      - /mnt/storage/hermes:/opt/data
+    networks:
+      - ai-stack
+    depends_on:
+      - ollama
+      - litellm
+    ports:
+      - "8642:8642"
+      - "9119:9119"
 
 volumes:
   open-webui-data:
