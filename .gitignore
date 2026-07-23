@@ -13,3 +13,7 @@ ollama-models/
 # OS files
 .DS_Store
 Thumbs.db
+ollama-models/
+.env.backup.*
+docker-compose.yml.with-hermes
+google-oauth.json
