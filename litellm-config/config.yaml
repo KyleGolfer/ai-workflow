@@ -25,6 +25,24 @@ model_list:
       api_base: https://api.venice.ai/v1
       api_key: os.environ/VENICE_API_KEY
 
+  # New powerful models
+  - model_name: llama-3.3-70b
+    litellm_params:
+      model: ollama/llama3.3:70b
+      api_base: http://ollama:11434
+      timeout: 300  # Longer timeout for 70B model
+
+  - model_name: qwen-2.5-72b
+    litellm_params:
+      model: ollama/qwen2.5:72b
+      api_base: http://ollama:11434
+      timeout: 300
+
+  - model_name: hermes-default
+    litellm_params:
+      model: ollama/llama3.3:70b  # Default for Hermes Agent
+      api_base: http://ollama:11434
+      timeout: 300
 # Router settings
 router_settings:
   # Retry failed requests
