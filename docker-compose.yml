@@ -3,17 +3,34 @@ networks:
     driver: bridge
 
 services:
+  # Tailscale Sidecar - All services route through this
+  tailscale:
+    image: tailscale/tailscale:latest
+    container_name: tailscale-ai
+    restart: unless-stopped
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+    environment:
+      - TS_AUTH_KEY=${TAILSCALE_AUTH_KEY}
+      - TS_STATE_DIR=/var/lib/tailscale
+      - TS_USERSPACE=false
+      - TS_ACCEPT_DNS=true
+    volumes:
+      - /mnt/appdata/tailscale-ai:/var/lib/tailscale
+    devices:
+      - /dev/net/tun:/dev/net/tun
+    networks:
+      - ai-stack
+
   # Local AI Models
   ollama:
     image: ollama/ollama:latest
     container_name: ollama
     restart: unless-stopped
-    ports:
-      - "11434:11434"
+    network_mode: service:tailscale
     volumes:
       - /mnt/storage/ollama:/root/.ollama
-    networks:
-      - ai-stack
     environment:
       - OLLAMA_KEEP_ALIVE=24h
     deploy:
@@ -26,14 +43,11 @@ services:
     image: ghcr.io/berriai/litellm:main-latest
     container_name: litellm
     restart: unless-stopped
-    ports:
-      - "4000:4000"
+    network_mode: service:tailscale
     volumes:
       - ./litellm-config/config.yaml:/app/config.yaml:ro
-    networks:
-      - ai-stack
     environment:
-      - LITELLM_MASTER_KEY=${LITELLM_MASTER_KEY}
+    #  - LITELLM_MASTER_KEY=${LITELLM_MASTER_KEY}
       - VENICE_API_KEY=${VENICE_API_KEY}
     command: ["--config", "/app/config.yaml", "--port", "4000"]
 
@@ -42,64 +56,55 @@ services:
     image: n8nio/n8n:latest
     container_name: n8n
     restart: unless-stopped
-    ports:
-      - "5678:5678"
+    network_mode: service:tailscale
     volumes:
       - ./n8n-data:/home/node/.n8n
-    networks:
-      - ai-stack
     environment:
       - N8N_BASIC_AUTH_ACTIVE=true
       - N8N_BASIC_AUTH_USER=${N8N_USER}
       - N8N_BASIC_AUTH_PASSWORD=${N8N_PASSWORD}
       - N8N_ENCRYPTION_KEY=${N8N_ENCRYPTION_KEY}
-      - N8N_HOST=pve-realisethedream.tailb44d6.ts.net
       - N8N_PORT=5678
-      - N8N_PROTOCOL=https
+      # Removed N8N_HOST and N8N_PROTOCOL - n8n will bind to all interfaces
 
   # Open WebUI - Chat Interface
   open-webui:
     image: ghcr.io/open-webui/open-webui:latest
     container_name: open-webui
     restart: unless-stopped
-    ports:
-      - "3000:8080"
+    network_mode: service:tailscale
     environment:
-      - OPENAI_API_BASE_URL=http://litellm:4000/v1
+      - OPENAI_API_BASE_URL=http://localhost:4000/v1
       - OPENAI_API_KEY=${LITELLM_MASTER_KEY}
-      - OLLAMA_BASE_URL=http://ollama:11434
+      - OLLAMA_BASE_URL=http://localhost:11434
       - WEBUI_AUTH=True
       - DEFAULT_MODELS=llama-3.3-70b,qwen-2.5-72b
       - ENABLE_SIGNUP=True
     volumes:
       - open-webui-data:/app/backend/data
-    networks:
-      - ai-stack
     depends_on:
       - litellm
       - ollama
       
-# Hermes Agent - AI Agent Platform
+  # Hermes Agent - AI Agent Platform
   hermes-agent:
     image: 1panel/hermes-agent:latest
     container_name: hermes-agent
     restart: unless-stopped
+    network_mode: service:tailscale
     environment:
-      - OLLAMA_HOST=http://ollama:11434
-      - DEFAULT_MODEL=llama3.3:70b
+      - OLLAMA_HOST=http://localhost:11434
+      - DEFAULT_MODEL=venice-fast
       - HERMES_API_KEY=${HERMES_API_KEY}
-      - OPENAI_API_BASE=http://litellm:4000/v1
+      - OPENAI_API_BASE=http://localhost:4000/v1
     volumes:
       - /mnt/appdata/hermes/config/config.yaml:/opt/hermes/config.yaml:ro
       - /mnt/appdata/hermes:/opt/data
-    networks:
-      - ai-stack
+      - /mnt/appdata/hermes/scripts:/scripts:ro
+      - /mnt/appdata/duplicati:/duplicati:ro
     depends_on:
       - ollama
       - litellm
-    ports:
-      - "8642:8642"
-      - "9119:9119"
 
 volumes:
   open-webui-data:
