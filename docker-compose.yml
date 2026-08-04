@@ -59,13 +59,16 @@ services:
     network_mode: service:tailscale
     volumes:
       - ./n8n-data:/home/node/.n8n
+      - /mnt/appdata/tailscale-ai/certs:/etc/tailscale-certs:ro
     environment:
       - N8N_BASIC_AUTH_ACTIVE=true
       - N8N_BASIC_AUTH_USER=${N8N_USER}
       - N8N_BASIC_AUTH_PASSWORD=${N8N_PASSWORD}
       - N8N_ENCRYPTION_KEY=${N8N_ENCRYPTION_KEY}
       - N8N_PORT=5678
-      # Removed N8N_HOST and N8N_PROTOCOL - n8n will bind to all interfaces
+      - N8N_PROTOCOL=https
+      - N8N_SSL_KEY=/etc/tailscale-certs/ai-workflow.tailb44d6.ts.net.key
+      - N8N_SSL_CERT=/etc/tailscale-certs/ai-workflow.tailb44d6.ts.net.crt
 
   # Open WebUI - Chat Interface
   open-webui:
@@ -85,7 +88,7 @@ services:
     depends_on:
       - litellm
       - ollama
-      
+
   # Hermes Agent - AI Agent Platform
   hermes-agent:
     image: 1panel/hermes-agent:latest
