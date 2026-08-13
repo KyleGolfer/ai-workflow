@@ -6,11 +6,17 @@ model_list:
       api_base: http://ollama:11434
       timeout: 120
 
-  - model_name: local/qwen
+  - model_name: local/gemma4
     litellm_params:
-      model: ollama/qwen2.5:72b
+      model: ollama/gemma4:12b
       api_base: http://ollama:11434
       timeout: 120
+
+#  - model_name: local/qwen
+#    litellm_params:
+#      model: ollama/qwen2.5:72b
+#      api_base: http://ollama:11434
+#      timeout: 120
 
   # Venice - premium credits for complex tasks
   - model_name: venice/premium
@@ -26,23 +32,21 @@ model_list:
       api_key: os.environ/VENICE_API_KEY
 
   # New powerful models
-  - model_name: llama-3.3-70b
-    litellm_params:
-      model: ollama/llama3.3:70b
-      api_base: http://ollama:11434
-      timeout: 300  # Longer timeout for 70B model
+#  - model_name: llama-3.3-70b
+#    litellm_params:
+#      model: ollama/llama3.3:70b
+#      timeout: 300  # Longer timeout for 70B model
 
-  - model_name: qwen-2.5-72b
-    litellm_params:
-      model: ollama/qwen2.5:72b
-      api_base: http://ollama:11434
-      timeout: 300
+#    litellm_params:
+#      model: ollama/qwen2.5:72b
+#      api_base: http://ollama:11434
+#      timeout: 300
 
-  - model_name: hermes-default
-    litellm_params:
-      model: ollama/llama3.3:70b  # Default for Hermes Agent
-      api_base: http://ollama:11434
-      timeout: 300
+#  - model_name: hermes-default
+#    litellm_params:
+#      model: ollama/llama3.3:70b  # Default for Hermes Agent
+#      timeout: 300
+
 # Router settings
 router_settings:
   # Retry failed requests
@@ -51,4 +55,5 @@ router_settings:
   timeout: 60
 
 general_settings:
-  master_key: os.environ/LITELLM_MASTER_KEY
+#  master_key: os.environ/LITELLM_MASTER_KEY
+  disable_auth: true

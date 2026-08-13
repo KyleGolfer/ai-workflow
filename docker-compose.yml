@@ -16,6 +16,9 @@ services:
       - TS_STATE_DIR=/var/lib/tailscale
       - TS_USERSPACE=false
       - TS_ACCEPT_DNS=true
+      - TS_EXTRA_ARGS=--reset
+      - TS_EXTRA_ARGS=--accept-routes
+      - TS_HOSTNAME=ai-workflow
     volumes:
       - /mnt/appdata/tailscale-ai:/var/lib/tailscale
     devices:
@@ -38,7 +41,7 @@ services:
         limits:
           memory: 240G
 
-  # AI Model Router
+  # AI Model Router (LiteLLM Gateway)
   litellm:
     image: ghcr.io/berriai/litellm:main-latest
     container_name: litellm
@@ -47,7 +50,6 @@ services:
     volumes:
       - ./litellm-config/config.yaml:/app/config.yaml:ro
     environment:
-    #  - LITELLM_MASTER_KEY=${LITELLM_MASTER_KEY}
       - VENICE_API_KEY=${VENICE_API_KEY}
     command: ["--config", "/app/config.yaml", "--port", "4000"]
 
@@ -81,14 +83,14 @@ services:
       - OPENAI_API_KEY=${LITELLM_MASTER_KEY}
       - OLLAMA_BASE_URL=http://localhost:11434
       - WEBUI_AUTH=True
-      - DEFAULT_MODELS=llama-3.3-70b,qwen-2.5-72b
+      - DEFAULT_MODELS=venice-fast
       - ENABLE_SIGNUP=True
     volumes:
       - open-webui-data:/app/backend/data
     depends_on:
       - litellm
       - ollama
-
+      
   # Hermes Agent - AI Agent Platform
   hermes-agent:
     image: 1panel/hermes-agent:latest
@@ -96,10 +98,10 @@ services:
     restart: unless-stopped
     network_mode: service:tailscale
     environment:
-      - OLLAMA_HOST=http://localhost:11434
+      - OPENAI_API_BASE=http://localhost:4000/v1
+      - OPENAI_API_KEY=${LITELLM_MASTER_KEY}
       - DEFAULT_MODEL=venice-fast
       - HERMES_API_KEY=${HERMES_API_KEY}
-      - OPENAI_API_BASE=http://localhost:4000/v1
     volumes:
       - /mnt/appdata/hermes/config/config.yaml:/opt/hermes/config.yaml:ro
       - /mnt/appdata/hermes:/opt/data
