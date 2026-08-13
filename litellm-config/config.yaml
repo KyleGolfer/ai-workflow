@@ -1,24 +1,16 @@
 model_list:
-  # Local models - default for cost savings
   - model_name: local/llama3
     litellm_params:
       model: ollama/llama3.1:8b
-      api_base: http://ollama:11434
+      api_base: http://localhost:11434
       timeout: 120
 
-  - model_name: local/gemma4
+  - model_name: hermes-default
     litellm_params:
-      model: ollama/gemma4:12b
-      api_base: http://ollama:11434
-      timeout: 120
+      model: ollama/llama3.1:8b
+      api_base: http://localhost:11434
+      timeout: 300
 
-#  - model_name: local/qwen
-#    litellm_params:
-#      model: ollama/qwen2.5:72b
-#      api_base: http://ollama:11434
-#      timeout: 120
-
-  # Venice - premium credits for complex tasks
   - model_name: venice/premium
     litellm_params:
       model: openai/venice-uncensored
@@ -27,33 +19,13 @@ model_list:
 
   - model_name: venice-fast
     litellm_params:
-      model: openai/venice-uncensored-1-2  # <-- REAL Venice model ID
-      api_base: https://api.venice.ai/v1
+      model: openai/venice-uncensored-1-2
+      api_base: https://api.venice.ai/api/v1
       api_key: os.environ/VENICE_API_KEY
 
-  # New powerful models
-#  - model_name: llama-3.3-70b
-#    litellm_params:
-#      model: ollama/llama3.3:70b
-#      timeout: 300  # Longer timeout for 70B model
-
-#    litellm_params:
-#      model: ollama/qwen2.5:72b
-#      api_base: http://ollama:11434
-#      timeout: 300
-
-  - model_name: hermes-default
-    litellm_params:
-      model: ollama/venice-fast  # Default for Hermes Agent
-      timeout: 300
-
-# Router settings
 router_settings:
-  # Retry failed requests
   num_retries: 2
-  # Timeout handling
   timeout: 60
 
 general_settings:
-#  master_key: os.environ/LITELLM_MASTER_KEY
   disable_auth: true
