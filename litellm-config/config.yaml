@@ -42,10 +42,10 @@ model_list:
 #      api_base: http://ollama:11434
 #      timeout: 300
 
-#  - model_name: hermes-default
-#    litellm_params:
-#      model: ollama/llama3.3:70b  # Default for Hermes Agent
-#      timeout: 300
+  - model_name: hermes-default
+    litellm_params:
+      model: ollama/venice-fast  # Default for Hermes Agent
+      timeout: 300
 
 # Router settings
 router_settings:
