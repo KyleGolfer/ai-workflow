@@ -8,6 +8,7 @@ model_list:
   - model_name: local/gemma4
     litellm_params:
       model: ollama/gemma4:e4b
+      num_ctx: 64000
       api_base: http://localhost:11434
       timeout: 120
 
