@@ -104,9 +104,9 @@ services:
       - DEFAULT_MODEL=hermes-default
       - HERMES_API_KEY=${HERMES_API_KEY}
       # Signal configuration
-      - SIGNAL_HTTP_URL=${SIGNAL_HTTP_URL}
-      - SIGNAL_ACCOUNT=${SIGNAL_ACCOUNT}
-      - SIGNAL_ALLOWED_USERS=${SIGNAL_ALLOWED_USERS}
+      # - SIGNAL_HTTP_URL=${SIGNAL_HTTP_URL}
+      # - SIGNAL_ACCOUNT=${SIGNAL_ACCOUNT}
+      # - SIGNAL_ALLOWED_USERS=${SIGNAL_ALLOWED_USERS}
     volumes:
       - /mnt/appdata/hermes/config/config.yaml:/opt/hermes/config.yaml:ro
       - /mnt/appdata/hermes:/opt/data
@@ -115,7 +115,7 @@ services:
     depends_on:
       - ollama
       - litellm
-      - signal-cli
+      # - signal-cli
 
 volumes:
   open-webui-data:
