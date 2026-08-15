@@ -5,6 +5,12 @@ model_list:
       api_base: http://localhost:11434
       timeout: 120
 
+  - model_name: local/llama3
+    litellm_params:
+      model: ollama/gemma4:e4b
+      api_base: http://localhost:11434
+      timeout: 120
+
   - model_name: hermes-default
     litellm_params:
       model: ollama/llama3.1:8b
