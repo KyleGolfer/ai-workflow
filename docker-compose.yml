@@ -38,7 +38,7 @@ services:
     volumes:
       - /mnt/appdata/signal-cli:/home/.local/share/signal-cli
     ports:
-      - "127.0.0.1:8080:8080"  # Only localhost for security
+      - "127.0.0.1:8081:8080"  # Changed from 8080 to 8081
     networks:
       - ai-stack
 

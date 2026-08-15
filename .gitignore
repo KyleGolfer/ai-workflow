@@ -17,3 +17,4 @@ ollama-models/
 .env.backup.*
 docker-compose.yml.with-hermes
 google-oauth.json
+signal-cli-*.tar.gz
