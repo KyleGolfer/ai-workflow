@@ -5,7 +5,7 @@ model_list:
       api_base: http://localhost:11434
       timeout: 120
 
-  - model_name: local/llama3
+  - model_name: local/gemma4
     litellm_params:
       model: ollama/gemma4:e4b
       api_base: http://localhost:11434
@@ -32,6 +32,9 @@ model_list:
 router_settings:
   num_retries: 2
   timeout: 60
+
+litellm_settings:
+  drop_params: true
 
 general_settings:
   disable_auth: true
