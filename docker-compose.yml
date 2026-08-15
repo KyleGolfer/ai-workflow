@@ -26,22 +26,6 @@ services:
     networks:
       - ai-stack
 
-  # Signal CLI - Messaging Gateway for Hermes
-  # Runs outside Tailscale to avoid Signal connection issues
-  signal-cli:
-    image: bbernhard/signal-cli-rest-api:latest
-    container_name: signal-cli
-    restart: unless-stopped
-    environment:
-      - MODE=json-rpc
-      #- AUTO_RECEIVE_SCHEDULE=0 22 * * *
-    volumes:
-      - /mnt/appdata/signal-cli:/home/.local/share/signal-cli
-    ports:
-      - "127.0.0.1:8081:8080"  # Changed from 8080 to 8081
-    networks:
-      - ai-stack
-
   # Local AI Models
   ollama:
     image: ollama/ollama:latest
@@ -113,13 +97,14 @@ services:
     container_name: hermes-agent
     restart: unless-stopped
     network_mode: service:tailscale
+    env_file: .env  # Add this line
     environment:
       - OPENAI_API_BASE=http://localhost:4000/v1
       - OPENAI_API_KEY=${LITELLM_MASTER_KEY}
       - DEFAULT_MODEL=hermes-default
       - HERMES_API_KEY=${HERMES_API_KEY}
       # Signal configuration
-      - SIGNAL_HTTP_URL=http://signal-cli:8080
+      - SIGNAL_HTTP_URL=${SIGNAL_HTTP_URL}
       - SIGNAL_ACCOUNT=${SIGNAL_ACCOUNT}
       - SIGNAL_ALLOWED_USERS=${SIGNAL_ALLOWED_USERS}
     volumes:
