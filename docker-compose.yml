@@ -1,24 +1,25 @@
 networks:
   ai-stack:
     driver: bridge
+    ipam:
+      config:
+        - subnet: 172.21.0.0/16
 
 services:
-  # Tailscale Sidecar - All services route through this
   tailscale:
-    image: tailscale/tailscale:latest
+    image: tailscale/tailscale:stable
     container_name: tailscale-ai
+    hostname: ai-workflow
     restart: unless-stopped
     cap_add:
       - NET_ADMIN
       - NET_RAW
     environment:
-      - TS_AUTH_KEY=${TAILSCALE_AUTH_KEY}
+      - TS_AUTHKEY=${TAILSCALE_AUTH_KEY}
       - TS_STATE_DIR=/var/lib/tailscale
       - TS_USERSPACE=false
       - TS_ACCEPT_DNS=true
-      - TS_EXTRA_ARGS=--reset
-      - TS_EXTRA_ARGS=--accept-routes
-      - TS_HOSTNAME=ai-workflow
+      - TS_EXTRA_ARGS=--reset --accept-routes --advertise-routes=172.21.0.0/16
     volumes:
       - /mnt/appdata/tailscale-ai:/var/lib/tailscale
     devices:
@@ -26,12 +27,12 @@ services:
     networks:
       - ai-stack
 
-  # Local AI Models
   ollama:
     image: ollama/ollama:latest
     container_name: ollama
     restart: unless-stopped
-    network_mode: service:tailscale
+    networks:
+      - ai-stack
     volumes:
       - /mnt/storage/ollama:/root/.ollama
     environment:
@@ -42,24 +43,24 @@ services:
         limits:
           memory: 240G
 
-  # AI Model Router (LiteLLM Gateway)
   litellm:
     image: ghcr.io/berriai/litellm:main-latest
     container_name: litellm
     restart: unless-stopped
-    network_mode: service:tailscale
+    networks:
+      - ai-stack
     volumes:
       - ./litellm-config/config.yaml:/app/config.yaml:ro
     environment:
       - VENICE_API_KEY=${VENICE_API_KEY}
     command: ["--config", "/app/config.yaml", "--port", "4000"]
 
-  # Workflow Engine
   n8n:
     image: n8nio/n8n:latest
     container_name: n8n
     restart: unless-stopped
-    network_mode: service:tailscale
+    networks:
+      - ai-stack
     volumes:
       - ./n8n-data:/home/node/.n8n
       - /mnt/appdata/tailscale-ai/certs:/etc/tailscale-certs:ro
@@ -69,20 +70,21 @@ services:
       - N8N_BASIC_AUTH_PASSWORD=${N8N_PASSWORD}
       - N8N_ENCRYPTION_KEY=${N8N_ENCRYPTION_KEY}
       - N8N_PORT=5678
-      - N8N_PROTOCOL=https
-      - N8N_SSL_KEY=/etc/tailscale-certs/ai-workflow.tailb44d6.ts.net.key
-      - N8N_SSL_CERT=/etc/tailscale-certs/ai-workflow.tailb44d6.ts.net.crt
+      - N8N_PROTOCOL=http
+      - N8N_SECURE_COOKIE=false
+  #    - N8N_SSL_KEY=/etc/tailscale-certs/ai-workflow.tailb44d6.ts.net.key
+  #    - N8N_SSL_CERT=/etc/tailscale-certs/ai-workflow.tailb44d6.ts.net.crt
 
-  # Open WebUI - Chat Interface
   open-webui:
     image: ghcr.io/open-webui/open-webui:latest
     container_name: open-webui
     restart: unless-stopped
-    network_mode: service:tailscale
+    networks:
+      - ai-stack
     environment:
-      - OPENAI_API_BASE_URL=http://localhost:4000/v1
+      - OPENAI_API_BASE_URL=http://litellm:4000/v1
       - OPENAI_API_KEY=${LITELLM_MASTER_KEY}
-      - OLLAMA_BASE_URL=http://localhost:11434
+      - OLLAMA_BASE_URL=http://ollama:11434
       - WEBUI_AUTH=True
       - DEFAULT_MODELS=venice-fast
       - ENABLE_SIGNUP=True
@@ -91,32 +93,6 @@ services:
     depends_on:
       - litellm
       - ollama
-
-  # Hermes Agent - AI Agent Platform
-  hermes-agent:
-    image: 1panel/hermes-agent:latest
-    container_name: hermes-agent
-    restart: unless-stopped
-    network_mode: service:tailscale
-    env_file: .env  # Add this line
-    environment:
-      - OPENAI_API_BASE=http://localhost:4000/v1
-      - OPENAI_API_KEY=${LITELLM_MASTER_KEY}
-      - DEFAULT_MODEL=hermes-default
-      - HERMES_API_KEY=${HERMES_API_KEY}
-      # Signal configuration
-      # - SIGNAL_HTTP_URL=${SIGNAL_HTTP_URL}
-      # - SIGNAL_ACCOUNT=${SIGNAL_ACCOUNT}
-      # - SIGNAL_ALLOWED_USERS=${SIGNAL_ALLOWED_USERS}
-    volumes:
-      - /mnt/appdata/hermes/config/config.yaml:/opt/hermes/config.yaml:ro
-      - /mnt/appdata/hermes:/opt/data
-      - /mnt/appdata/hermes/scripts:/scripts:ro
-      - /mnt/appdata/duplicati:/duplicati:ro
-    depends_on:
-      - ollama
-      - litellm
-      # - signal-cli
 
 volumes:
   open-webui-data:
