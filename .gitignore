@@ -9,11 +9,14 @@ client_secret*.json
 n8n-data/
 ollama-models/
 *.log
-
+caddy-data/           # ADD
+sandbox-tls/          # ADD
+litellm-db/           # ADD
+tailscale-state/      # ADD
+/mnt/appdata/tailscale-ai/  # ADD
 # OS files
 .DS_Store
 Thumbs.db
-ollama-models/
 .env.backup.*
 docker-compose.yml.with-hermes
 google-oauth.json

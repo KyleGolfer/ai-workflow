@@ -8,9 +8,10 @@ networks:
 volumes:
   open-webui-data:
   sandbox-tls:
+  caddy-data:
 
 services:
-  tailscale:
+  tailscale-ai:
     image: tailscale/tailscale:stable
     container_name: tailscale-ai
     hostname: ai-workflow
@@ -31,6 +32,18 @@ services:
     networks:
       ai-stack:
         ipv4_address: 172.21.0.10
+
+  # Caddy reverse proxy - shares tailscale network namespace
+  caddy:
+    image: caddy:2-alpine
+    container_name: caddy-ai
+    network_mode: service:tailscale-ai  # Shares tailscale-ai's network
+    restart: unless-stopped
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+    depends_on:
+      - tailscale-ai
 
   litellm-db:
     image: postgres:16-alpine
@@ -70,6 +83,9 @@ services:
     networks:
       ai-stack:
         ipv4_address: 172.21.0.3
+    # REMOVED: ports: - "4000:4000"  (Now proxied through Caddy)
+    expose:
+      - "4000"
     volumes:
       - ./litellm-config/config.yaml:/app/config.yaml:ro
     environment:
@@ -82,7 +98,7 @@ services:
     depends_on:
       - litellm-db
 
-  # n8n AI Sandbox Stack
+  # n8n AI Sandbox Stack (unchanged)
   sandbox-certs:
     image: ghcr.io/n8n-io/n8n-sandbox-service-api:latest
     user: '0:0'
@@ -160,6 +176,8 @@ services:
   searxng:
     image: ghcr.io/searxng/searxng:latest
     container_name: searxng
+    expose:
+      - "8080"
     environment:
       SEARXNG_SECRET: ${SEARXNG_SECRET}
     volumes:
@@ -175,6 +193,8 @@ services:
     networks:
       ai-stack:
         ipv4_address: 172.21.0.2
+    expose:
+      - "5678"
     volumes:
       - ./n8n-data:/home/node/.n8n
       - /mnt/appdata/tailscale-ai/certs:/etc/tailscale-certs:ro
@@ -186,7 +206,6 @@ services:
       - N8N_PORT=5678
       - N8N_PROTOCOL=http
       - N8N_SECURE_COOKIE=false
-      # AI Assistant
       - N8N_ENABLED_MODULES=instance-ai
       - N8N_INSTANCE_AI_MODEL_URL=http://172.21.0.3:4000/v1
       - N8N_INSTANCE_AI_MODEL_API_KEY=${LITELLM_MASTER_KEY}
@@ -206,6 +225,8 @@ services:
     networks:
       ai-stack:
         ipv4_address: 172.21.0.5
+    expose:
+      - "8080"
     environment:
       - OPENAI_API_BASE_URL=http://172.21.0.3:4000/v1
       - OPENAI_API_KEY=${LITELLM_MASTER_KEY}
