@@ -8,50 +8,14 @@ networks:
 volumes:
   open-webui-data:
   sandbox-tls:
-  caddy-data:
 
 services:
-  tailscale-ai:
-    image: tailscale/tailscale:stable
-    container_name: tailscale-ai
-    hostname: ai-workflow
-    restart: unless-stopped
-    cap_add:
-      - NET_ADMIN
-      - NET_RAW
-    environment:
-      - TS_AUTHKEY=${TAILSCALE_AUTH_KEY}
-      - TS_STATE_DIR=/var/lib/tailscale
-      - TS_USERSPACE=false
-      - TS_ACCEPT_DNS=true
-      - TS_EXTRA_ARGS=--reset --accept-routes --advertise-routes=172.21.0.0/16
-    volumes:
-      - /mnt/appdata/tailscale-ai:/var/lib/tailscale
-    devices:
-      - /dev/net/tun:/dev/net/tun
-    networks:
-      ai-stack:
-        ipv4_address: 172.21.0.10
-
-  # Caddy reverse proxy - shares tailscale network namespace
-  caddy:
-    image: caddy:2-alpine
-    container_name: caddy-ai
-    network_mode: service:tailscale-ai  # Shares tailscale-ai's network
-    restart: unless-stopped
-    volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile:ro
-      - caddy-data:/data
-    depends_on:
-      - tailscale-ai
-
   litellm-db:
     image: postgres:16-alpine
     container_name: litellm-db
     restart: unless-stopped
     networks:
-      ai-stack:
-        ipv4_address: 172.21.0.7
+      - ai-stack
     environment:
       - POSTGRES_USER=litellm
       - POSTGRES_PASSWORD=${LITELLM_DB_PASSWORD}
@@ -64,8 +28,7 @@ services:
     container_name: ollama
     restart: unless-stopped
     networks:
-      ai-stack:
-        ipv4_address: 172.21.0.4
+      - ai-stack
     volumes:
       - /mnt/storage/ollama:/root/.ollama
     environment:
@@ -81,11 +44,9 @@ services:
     container_name: litellm
     restart: unless-stopped
     networks:
-      ai-stack:
-        ipv4_address: 172.21.0.3
-    # REMOVED: ports: - "4000:4000"  (Now proxied through Caddy)
-    expose:
-      - "4000"
+      - ai-stack
+    ports:
+      - "100.65.154.84:4000:4000"   # Direct to host Tailscale IP
     volumes:
       - ./litellm-config/config.yaml:/app/config.yaml:ro
     environment:
@@ -93,12 +54,12 @@ services:
       - LITELLM_MASTER_KEY=${LITELLM_MASTER_KEY}
       - UI_USERNAME=${UI_USERNAME}
       - UI_PASSWORD=${UI_PASSWORD}
-      - DATABASE_URL=postgresql://litellm:${LITELLM_DB_PASSWORD}@172.21.0.7:5432/litellm
+      - DATABASE_URL=postgresql://litellm:${LITELLM_DB_PASSWORD}@litellm-db:5432/litellm
     command: ["--config", "/app/config.yaml", "--port", "4000"]
     depends_on:
       - litellm-db
 
-  # n8n AI Sandbox Stack (unchanged)
+  # n8n AI Sandbox Stack
   sandbox-certs:
     image: ghcr.io/n8n-io/n8n-sandbox-service-api:latest
     user: '0:0'
@@ -135,8 +96,7 @@ services:
     volumes:
       - sandbox-tls:/tls:ro
     networks:
-      ai-stack:
-        ipv4_address: 172.21.0.11
+      - ai-stack
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:8080/healthz"]
       interval: 5s
@@ -170,34 +130,30 @@ services:
     volumes:
       - sandbox-tls:/tls:ro
     networks:
-      ai-stack:
-        ipv4_address: 172.21.0.12
+      - ai-stack
 
   searxng:
     image: ghcr.io/searxng/searxng:latest
     container_name: searxng
-    expose:
-      - "8080"
     environment:
       SEARXNG_SECRET: ${SEARXNG_SECRET}
     volumes:
       - ./searxng-settings.yml:/etc/searxng/settings.yml:ro
     networks:
-      ai-stack:
-        ipv4_address: 172.21.0.13
+      - ai-stack
+    ports:
+      - "100.65.154.84:4003:8080"   # Direct to host Tailscale IP
 
   n8n:
     image: n8nio/n8n:latest
     container_name: n8n
     restart: unless-stopped
     networks:
-      ai-stack:
-        ipv4_address: 172.21.0.2
-    expose:
-      - "5678"
+      - ai-stack
+    ports:
+      - "100.65.154.84:4002:5678"   # Direct to host Tailscale IP
     volumes:
       - ./n8n-data:/home/node/.n8n
-      - /mnt/appdata/tailscale-ai/certs:/etc/tailscale-certs:ro
     environment:
       - N8N_BASIC_AUTH_ACTIVE=true
       - N8N_BASIC_AUTH_USER=${N8N_USER}
@@ -207,13 +163,13 @@ services:
       - N8N_PROTOCOL=http
       - N8N_SECURE_COOKIE=false
       - N8N_ENABLED_MODULES=instance-ai
-      - N8N_INSTANCE_AI_MODEL_URL=http://172.21.0.3:4000/v1
+      - N8N_INSTANCE_AI_MODEL_URL=http://litellm:4000/v1
       - N8N_INSTANCE_AI_MODEL_API_KEY=${LITELLM_MASTER_KEY}
       - N8N_INSTANCE_AI_SANDBOX_ENABLED=true
       - N8N_INSTANCE_AI_SANDBOX_IMAGE=ghcr.io/n8n-io/n8n-sandbox-service-sandbox:latest
-      - N8N_SANDBOX_SERVICE_URL=http://172.21.0.11:8080
+      - N8N_SANDBOX_SERVICE_URL=http://sandbox-api:8080
       - N8N_SANDBOX_SERVICE_API_KEY=${SANDBOX_API_KEYS}
-      - N8N_INSTANCE_AI_SEARXNG_URL=http://172.21.0.13:8080
+      - N8N_INSTANCE_AI_SEARXNG_URL=http://searxng:8080
     depends_on:
       sandbox-api:
         condition: service_healthy
@@ -223,14 +179,13 @@ services:
     container_name: open-webui
     restart: unless-stopped
     networks:
-      ai-stack:
-        ipv4_address: 172.21.0.5
-    expose:
-      - "8080"
+      - ai-stack
+    ports:
+      - "100.65.154.84:4001:8080"   # Direct to host Tailscale IP
     environment:
-      - OPENAI_API_BASE_URL=http://172.21.0.3:4000/v1
+      - OPENAI_API_BASE_URL=http://litellm:4000/v1
       - OPENAI_API_KEY=${LITELLM_MASTER_KEY}
-      - OLLAMA_BASE_URL=http://172.21.0.4:11434
+      - OLLAMA_BASE_URL=http://ollama:11434
       - WEBUI_AUTH=True
       - DEFAULT_MODELS=venice-fast
       - ENABLE_SIGNUP=True
