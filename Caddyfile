@@ -1,24 +1,20 @@
 {
-    auto_https off  # Tailscale handles HTTPS
+    auto_https off
     admin off
 }
 
-# LiteLLM API & UI
 :4000 {
-    reverse_proxy 172.21.0.3:4000
+    reverse_proxy litellm:4000
 }
 
-# Open WebUI
 :8080 {
-    reverse_proxy 172.21.0.5:8080
+    reverse_proxy open-webui:8080
 }
 
-# n8n
 :5678 {
-    reverse_proxy 172.21.0.2:5678
+    reverse_proxy n8n:5678
 }
 
-# SearXNG
 :8081 {
-    reverse_proxy 172.21.0.13:8080
+    reverse_proxy searxng:8080
 }

@@ -88,6 +88,8 @@ services:
       - ENDPOINTS=openAI
       - TITLE_CONVO=true
       - SEARCH=true
+      - SEARXNG_URL=http://searxng:8080
+      - DEFAULT_TOOLS=web_search
       - MEILI_HOST=http://librechat-meilisearch:7700
       - MEILI_MASTER_KEY=${MEILI_MASTER_KEY}
       - RAG_API_URL=http://librechat-rag:8000
@@ -252,6 +254,7 @@ services:
       - N8N_SANDBOX_SERVICE_URL=http://sandbox-api:8080
       - N8N_SANDBOX_SERVICE_API_KEY=${SANDBOX_API_KEYS}
       - N8N_INSTANCE_AI_SEARXNG_URL=http://searxng:8080
+      - DEFAULT_TOOLS=web_search
     depends_on:
       sandbox-api:
         condition: service_healthy

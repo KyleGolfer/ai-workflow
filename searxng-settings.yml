@@ -1,5 +1,25 @@
 use_default_settings: true
+
 search:
   formats:
     - html
     - json
+
+engines:
+  - name: duckduckgo
+    disabled: false
+  - name: google
+    disabled: false
+  - name: bing
+    disabled: false
+  - name: brave
+    disabled: true  # Disable brave (rate limiting)
+  - name: wikipedia
+    disabled: false
+
+server:
+  limiter: false  # Disable rate limiting for local use
+  image_proxy: true
+
+ui:
+  static_use_hash: true
